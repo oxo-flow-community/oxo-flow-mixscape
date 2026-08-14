@@ -1,0 +1,181 @@
+# oxo-flow port of epigen/mixscape_seurat v2.0.3
+# (sha bcf72d5769e2fc7246ba9813892fb438288b6160)
+#
+# Pooled CRISPR perturbation analysis (scCRISPR-seq / CROP-seq / Perturb-seq)
+# powered by Seurat's Mixscape. Input is one processed Seurat object per
+# sample (as in the upstream annotation CSV); output is the Mixscape
+# classification, perturbation signatures, LDA projection, plots, and the
+# reproducibility artifacts (exported envs, config, annotation).
+#
+# Default-parameters main execution path only. See README.md for the
+# fidelity table and the excluded upstream steps.
+
+[workflow]
+name = "oxo-flow-mixscape"
+version = "0.11.0"
+description = "Pooled CRISPR perturbation analysis with Seurat Mixscape (port of epigen/mixscape_seurat v2.0.3)"
+author = "oxo-flow-community"
+
+[config]
+# ---- RESOURCES (upstream config/config.yaml) ----
+mem = "32000"                          # mem_mb for mixscape/lda/visualize
+threads = "1"                          # upstream threads; mixscape rule runs 8x
+# ---- GENERAL ----
+annotation = "test/fixtures/annotation.csv"   # upstream annotation CSV (name,data)
+result_path = "results"                # upstream result_path; results land under result_path/mixscape_seurat
+project_name = "myCROPseq"
+data_dir = "test/fixtures/data"        # per-sample Seurat .rds inputs: {data_dir}/{sample}.rds
+# ---- MIXSCAPE ----
+grna_split_symbol = "-"                # split gRNA terms into target gene / guide number
+assay = "SCT"                          # assay to analyse ("SCT" or "RNA")
+variable_features_only = "0"           # analyse only variable features (1=yes, 0=no)
+# CalcPerturbSig (upstream nested keys flattened; values identical)
+grna_col = "gRNAcall"
+gene_col = "KOcall"
+nt_term = "NonTargeting"
+n_neighbors = "30"
+ndims = "40"
+cps_split_by_col = ""
+# RunMixscape (flattened)
+fine_mode = "FALSE"
+lfc_th = "0.1"
+mixscape_split_by_col = ""
+min_de_genes = "5"
+min_cells = "5"
+prtb_type = "KO"
+# ---- LDA ----
+lda_npcs = "10"                        # MixscapeLDA npcs
+# ---- VISUALIZATION ----
+antibody_capture = "AB"                # 10X Antibody_Capture assay name; "" disables
+
+[[sample_groups]]
+name = "cohort"
+samples = ["S1", "S2"]
+
+# ---------------------------------------------------------------------------
+# Mixscape classification (upstream rule `mixscape`)
+# ---------------------------------------------------------------------------
+[[rules]]
+name = "mixscape"
+description = "Calculate perturbation signatures (CalcPerturbSig), classify perturbed cells (RunMixscape), plot classification statistics"
+input = ["{config.data_dir}/{sample}.rds"]
+output = [
+    "{config.result_path}/mixscape_seurat/{sample}/ALL_object.rds",
+    "{config.result_path}/mixscape_seurat/{sample}/ALL_metadata.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/ALL_PRTB_data.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/mixscape_stats.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/plots/stats",
+]
+script = "scripts/mixscape.R {input[0]} {output[0]} {config.assay} {config.variable_features_only} {config.grna_split_symbol} {config.grna_col} {config.gene_col} {config.nt_term} {config.n_neighbors} {config.ndims} {config.cps_split_by_col} {config.fine_mode} {config.lfc_th} {config.mixscape_split_by_col} {config.min_de_genes} {config.min_cells} {config.prtb_type} {config.lda_npcs}"
+
+[rules.resources]
+threads = 8          # upstream: 8 * config.threads (threads=1)
+memory = "32000M"
+
+[rules.environment]
+conda = "envs/seurat_mixscape.yaml"
+
+# ---------------------------------------------------------------------------
+# LDA on the perturbed subset (upstream rule `lda`)
+# ---------------------------------------------------------------------------
+[[rules]]
+name = "lda"
+description = "LDA on perturbed + non-targeting cells (MixscapeLDA), 2-D UMAP projection, save filtered object and data matrices"
+input = ["{config.result_path}/mixscape_seurat/{sample}/ALL_object.rds"]
+output = [
+    "{config.result_path}/mixscape_seurat/{sample}/FILTERED_object.rds",
+    "{config.result_path}/mixscape_seurat/{sample}/FILTERED_metadata.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/LDA_data.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/FILTERED_{config.assay}_data.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/FILTERED_PRTB_data.csv",
+    "{config.result_path}/mixscape_seurat/{sample}/plots/LDA_UMAP.png",
+]
+script = "scripts/lda.R {input[0]} {config.assay} {config.gene_col} {config.nt_term} {config.prtb_type} {config.lfc_th} {config.lda_npcs}"
+
+[rules.resources]
+threads = 1
+memory = "32000M"
+
+[rules.environment]
+conda = "envs/seurat_lda.yaml"
+
+# ---------------------------------------------------------------------------
+# Visualization (upstream rule `visualize`)
+# ---------------------------------------------------------------------------
+[[rules]]
+name = "visualize"
+description = "Plot perturbation scores (density), posterior probabilities (violin) and optional antibody expression (violin)"
+input = ["{config.result_path}/mixscape_seurat/{sample}/ALL_object.rds"]
+output = [
+    "{config.result_path}/mixscape_seurat/{sample}/plots/PerturbScore",
+    "{config.result_path}/mixscape_seurat/{sample}/plots/PosteriorProbability",
+]
+script = "scripts/visualize.R {input[0]} {config.gene_col} {config.nt_term} {config.prtb_type} {config.cps_split_by_col} {config.mixscape_split_by_col} {config.antibody_capture}"
+
+[rules.resources]
+threads = 1
+memory = "32000M"
+
+[rules.environment]
+conda = "envs/seurat_mixscape.yaml"
+
+# ---------------------------------------------------------------------------
+# Environment export (upstream rule `env_export`; {env} wildcard expanded
+# into two explicit rules because environments cannot be wildcarded)
+# ---------------------------------------------------------------------------
+[[rules]]
+name = "env_export_mixscape"
+description = "Export the exact seurat_mixscape conda environment"
+output = ["{config.result_path}/mixscape_seurat/envs/seurat_mixscape.yaml"]
+shell = "conda env export > {output[0]}"
+
+[rules.resources]
+threads = 1
+memory = "1000M"
+
+[rules.environment]
+conda = "envs/seurat_mixscape.yaml"
+
+[[rules]]
+name = "env_export_lda"
+description = "Export the exact seurat_lda conda environment"
+output = ["{config.result_path}/mixscape_seurat/envs/seurat_lda.yaml"]
+shell = "conda env export > {output[0]}"
+
+[rules.resources]
+threads = 1
+memory = "1000M"
+
+[rules.environment]
+conda = "envs/seurat_lda.yaml"
+
+# ---------------------------------------------------------------------------
+# Config export (upstream rule `config_export`; run: block ported to
+# scripts/export_config.py, runtime config values passed as CLI args)
+# ---------------------------------------------------------------------------
+[[rules]]
+name = "config_export"
+description = "Export the runtime configuration as YAML for documentation and reproducibility"
+output = ["{config.result_path}/mixscape_seurat/configs/{config.project_name}_config.yaml"]
+script = "scripts/export_config.py {config.mem} {config.threads} {config.annotation} {config.result_path} {config.project_name} {config.grna_split_symbol} {config.assay} {config.variable_features_only} {config.grna_col} {config.gene_col} {config.nt_term} {config.n_neighbors} {config.ndims} {config.cps_split_by_col} {config.fine_mode} {config.lfc_th} {config.mixscape_split_by_col} {config.min_de_genes} {config.min_cells} {config.prtb_type} {config.lda_npcs} {config.antibody_capture} {output[0]}"
+
+[rules.resources]
+threads = 1
+memory = "1000M"
+
+[rules.environment]
+conda = "envs/config_export.yaml"
+
+# ---------------------------------------------------------------------------
+# Annotation export (upstream rule `annot_export`)
+# ---------------------------------------------------------------------------
+[[rules]]
+name = "annot_export"
+description = "Copy the annotation file into the results for documentation and reproducibility"
+input = ["{config.annotation}"]
+output = ["{config.result_path}/mixscape_seurat/configs/{config.project_name}_annot.csv"]
+shell = "cp {input} {output}"
+
+[rules.resources]
+threads = 1
+memory = "1000M"

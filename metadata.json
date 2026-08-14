@@ -1,0 +1,41 @@
+{
+  "name": "oxo-flow-mixscape",
+  "title": "epigen mixscape_seurat (port)",
+  "engine": "oxo-flow",
+  "source": {
+    "repo": "epigen/mixscape_seurat",
+    "url": "https://github.com/epigen/mixscape_seurat",
+    "tag": "v2.0.3",
+    "sha": "bcf72d5769e2fc7246ba9813892fb438288b6160",
+    "license": "MIT"
+  },
+  "created": "2026-08-15",
+  "domain": "single-cell",
+  "tags": ["crispr", "scrna-seq", "mixscape", "perturbation", "seurat", "snakemake"],
+  "description": "oxo-flow port of the epigen/mixscape_seurat Snakemake workflow: pooled CRISPR perturbation analysis (scCRISPR-seq / CROP-seq / Perturb-seq) with Seurat Mixscape — perturbation signatures (CalcPerturbSig), perturbed-cell classification (RunMixscape), LDA + UMAP projection of the perturbed subset, visualization suite, and reproducibility exports.",
+  "scope": ["mixscape", "lda", "visualize", "env_export", "config_export", "annot_export"],
+  "excluded": [
+    "demultiplexing — upstream module (scrnaseq_processing_seurat), not part of mixscape_seurat v2.0.3",
+    "scdna — upstream module, not part of mixscape_seurat v2.0.3",
+    "normalization — QC/normalization/integration are upstream MrBiomics recipe modules; the input is a processed Seurat object",
+    "differential_test — perturbation DE runs inside Seurat RunMixscape (min.de.genes/logfc.threshold), no separate rule"
+  ],
+  "rule_count": 7,
+  "tools": [
+    "Seurat@4.4.0",
+    "seuratobject@4.1.4",
+    "matrix@1.6_5",
+    "irlba@2.3.5.1",
+    "mixtools@2.0.0",
+    "ggplot2@3.5.2",
+    "scales@1.3.0",
+    "patchwork@1.2.0",
+    "data.table@1.14.10",
+    "pyyaml@6.0.1",
+    "conda@unpinned (user install, same as upstream)"
+  ],
+  "status": "ready",
+  "repo_url": "https://github.com/oxo-flow-community/oxo-flow-mixscape",
+  "site_page": "https://oxo-flow-community.github.io/oxo-flow-mixscape/",
+  "upstream_license": "MIT"
+}
