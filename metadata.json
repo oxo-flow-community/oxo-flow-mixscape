@@ -1,7 +1,9 @@
 {
   "name": "oxo-flow-mixscape",
-  "title": "epigen mixscape_seurat (port)",
-  "engine": "oxo-flow",
+  "title": "Pooled CRISPR perturbation analysis with Seurat Mixscape",
+  "origin": "port",
+  "rating": "verified",
+  "engine": "snakemake",
   "source": {
     "repo": "epigen/mixscape_seurat",
     "url": "https://github.com/epigen/mixscape_seurat",
@@ -12,8 +14,7 @@
   "created": "2026-08-15",
   "domain": "single-cell",
   "tags": ["crispr", "scrna-seq", "mixscape", "perturbation", "seurat", "snakemake"],
-  "description": "oxo-flow port of the epigen/mixscape_seurat Snakemake workflow: pooled CRISPR perturbation analysis (scCRISPR-seq / CROP-seq / Perturb-seq) with Seurat Mixscape — perturbation signatures (CalcPerturbSig), perturbed-cell classification (RunMixscape), LDA + UMAP projection of the perturbed subset, visualization suite, and reproducibility exports.",
-  "scope": ["mixscape", "lda", "visualize", "env_export", "config_export", "annot_export"],
+  "scope": ["mixscape", "lda", "visualize", "env_export_mixscape", "env_export_lda", "config_export", "annot_export"],
   "excluded": [
     "demultiplexing — upstream module (scrnaseq_processing_seurat), not part of mixscape_seurat v2.0.3",
     "scdna — upstream module, not part of mixscape_seurat v2.0.3",
@@ -21,21 +22,19 @@
     "differential_test — perturbation DE runs inside Seurat RunMixscape (min.de.genes/logfc.threshold), no separate rule"
   ],
   "rule_count": 7,
-  "tools": [
-    "Seurat@4.4.0",
-    "seuratobject@4.1.4",
-    "matrix@1.6_5",
-    "irlba@2.3.5.1",
-    "mixtools@2.0.0",
-    "ggplot2@3.5.2",
-    "scales@1.3.0",
-    "patchwork@1.2.0",
-    "data.table@1.14.10",
-    "pyyaml@6.0.1",
-    "conda@unpinned (user install, same as upstream)"
-  ],
-  "status": "ready",
+  "tools": ["Seurat", "seuratobject", "irlba", "matrix", "mixtools", "ggplot2", "scales", "patchwork", "data.table", "pyyaml", "conda"],
+  "description": "Pooled CRISPR perturbation analysis (scCRISPR-seq / CROP-seq / Perturb-seq) with Seurat Mixscape: per-cell perturbation signatures (CalcPerturbSig), perturbed vs. non-perturbed classification (RunMixscape), LDA + UMAP projection of the perturbed subset, the full visualization suite (classification statistics, perturbation-score density, posterior-probability and optional antibody-expression violin plots), and reproducibility exports (exact conda envs, runtime config, annotation file). Input is one processed Seurat object per sample.",
+  "installation": {
+    "engine": "oxo-flow >= 0.11.0",
+    "toolchain": "conda envs — pinned (r-seurat 4.4.0, r-seuratobject 4.1.4, r-irlba 2.3.5.1, r-matrix, r-mixtools 2.0.0, r-ggplot2 3.5.2, r-scales 1.3.0, r-patchwork 1.2.0, r-data.table 1.14.10, pyyaml 6.0.1); conda/mamba required at runtime, conda binary on PATH for env export",
+    "requirements": [
+      "One processed Seurat object per sample, as {data_dir}/{sample}.rds (already normalized/integrated — QC/normalization run upstream)",
+      "Annotation CSV (name, data columns) mapping sample names to object paths",
+      "Optional: 10X Antibody_Capture assay 'AB' for antibody-expression violin plots",
+      "Compute: up to 8 CPUs / 32000 MB (32 GB) per rule (mixscape, lda, visualize); export rules 1 CPU / 1 GB; -j controls parallelism"
+    ]
+  },
   "repo_url": "https://github.com/oxo-flow-community/oxo-flow-mixscape",
-  "site_page": "https://oxo-flow-community.github.io/oxo-flow-mixscape/",
+  "license": "Apache-2.0",
   "upstream_license": "MIT"
 }
