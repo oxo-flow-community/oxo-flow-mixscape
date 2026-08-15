@@ -23,11 +23,11 @@ config, annotation file).
 
 ### 1. Install oxo-flow
 
-Requires **oxo-flow >= 0.11.0**. The recommended way is the prebuilt release
+Requires **oxo-flow >= 0.12.0**. The recommended way is the prebuilt release
 binary (Linux x86_64):
 
 ```bash
-curl -fL -o oxo-flow.tar.gz https://github.com/Traitome/oxo-flow/releases/download/v0.11.0/oxo-flow-v0.11.0-x86_64-unknown-linux-gnu.tar.gz
+curl -fL -o oxo-flow.tar.gz https://github.com/Traitome/oxo-flow/releases/latest/download/oxo-flow-latest-x86_64-unknown-linux-gnu.tar.gz
 tar xzf oxo-flow.tar.gz && sudo mv oxo-flow /usr/local/bin/
 ```
 
