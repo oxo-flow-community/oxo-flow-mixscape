@@ -50,6 +50,10 @@ git clone https://github.com/oxo-flow-community/oxo-flow-mixscape.git
   `data_dir=/path/to/your/data` containing `S1.rds`, `S2.rds`, …). The
   workflow expects already normalized/integrated objects — QC, normalization
   and integration run upstream of this workflow (see the Fidelity section).
+  The assay analysed is the `assay` config value: the default is `"RNA"`
+  (matching the plain `CreateSeuratObject` fixtures); set `assay = "SCT"`
+  when your upstream pipeline normalised with SCTransform, as the nf-core
+  default assumes.
 - An annotation CSV (`annotation=...`) with at least `name` and `data`
   columns mapping each sample name to its object path (default
   `test/fixtures/annotation.csv`).
