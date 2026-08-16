@@ -157,7 +157,7 @@ conda = "envs/seurat_lda.yaml"
 name = "config_export"
 description = "Export the runtime configuration as YAML for documentation and reproducibility"
 output = ["{config.result_path}/mixscape_seurat/configs/{config.project_name}_config.yaml"]
-script = "scripts/export_config.py {config.mem} {config.threads} {config.annotation} {config.result_path} {config.project_name} {config.grna_split_symbol} {config.assay} {config.variable_features_only} {config.grna_col} {config.gene_col} {config.nt_term} {config.n_neighbors} {config.ndims} {config.cps_split_by_col} {config.fine_mode} {config.lfc_th} {config.mixscape_split_by_col} {config.min_de_genes} {config.min_cells} {config.prtb_type} {config.lda_npcs} {config.antibody_capture} {output[0]}"
+script = "scripts/export_config.py "{config.mem}" "{config.threads}" "{config.annotation}" "{config.result_path}" "{config.project_name}" "{config.grna_split_symbol}" "{config.assay}" "{config.variable_features_only}" "{config.grna_col}" "{config.gene_col}" "{config.nt_term}" "{config.n_neighbors}" "{config.ndims}" "{config.cps_split_by_col}" "{config.fine_mode}" "{config.lfc_th}" "{config.mixscape_split_by_col}" "{config.min_de_genes}" "{config.min_cells}" "{config.prtb_type}" "{config.lda_npcs}" "{config.antibody_capture}" "{output[0]}""
 
 [rules.resources]
 threads = 1
