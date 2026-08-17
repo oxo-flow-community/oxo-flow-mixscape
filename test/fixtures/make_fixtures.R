@@ -16,8 +16,15 @@ set.seed(42)
 make_fixture <- function(sample_name, outdir) {
     n_genes <- 60
     n_cells <- 30
-    counts <- matrix(rpois(n_genes * n_cells, lambda = 1),
+    # Gene-varying Poisson means (0.5..20) + two perturbation-marker genes
+    # with clearly elevated counts: near-uniform rpois(lambda=1) counts made
+    # SCTransform keep zero-variance features only, and RunPCA's irlba died
+    # with 'max(nu, nv) must be positive' (live).
+    gene_means <- runif(n_genes, 0.5, 20)
+    counts <- matrix(rpois(n_genes * n_cells, lambda = rep(gene_means, n_cells)),
                      nrow = n_genes, ncol = n_cells)
+    counts[1, ] <- counts[1, ] + rpois(n_cells, lambda = 15)   # marker 1
+    counts[2, ] <- counts[2, ] + rpois(n_cells, lambda = 15)   # marker 2
     rownames(counts) <- sprintf("GENE%02d", seq_len(n_genes))
     colnames(counts) <- sprintf("%s_CELL%02d", sample_name, seq_len(n_cells))
     obj <- CreateSeuratObject(counts = counts, project = sample_name)
