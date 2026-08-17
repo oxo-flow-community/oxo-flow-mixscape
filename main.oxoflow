@@ -27,9 +27,9 @@ project_name = "myCROPseq"
 data_dir = "test/fixtures/data"        # per-sample Seurat .rds inputs: {data_dir}/{sample}.rds
 # ---- MIXSCAPE ----
 grna_split_symbol = "-"                # split gRNA terms into target gene / guide number
-assay = "RNA"                          # assay to analyse ("SCT" or "RNA"); the bundled fixtures are plain
-                                      # CreateSeuratObject objects (RNA assay) — the SCT value assumes
-                                      # upstream SCTransform normalization, as in the nf-core default
+assay = "SCT"                          # assay to analyse ("SCT" or "RNA") — upstream default "SCT"
+                                      # (objects carry SCTransform normalization; the bundled fixtures
+                                      # are generated that way via make_fixtures.R)
 variable_features_only = "0"           # analyse only variable features (1=yes, 0=no)
 # CalcPerturbSig (upstream nested keys flattened; values identical)
 grna_col = "gRNAcall"

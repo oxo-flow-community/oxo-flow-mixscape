@@ -25,6 +25,9 @@ make_fixture <- function(sample_name, outdir) {
     guides <- c(sprintf("STAT1-%d", 1:3), "NonTargeting")
     obj$gRNAcall <- sample(guides, n_cells, replace = TRUE)
     obj$KOcall <- ifelse(obj$gRNAcall == "NonTargeting", "NonTargeting", "STAT1")
+    # Upstream (nf-core scrnaseq) feeds Mixscape SCTransform-normalized
+    # objects (DefaultAssay = "SCT"); the fixture mirrors that contract.
+    obj <- SCTransform(obj, verbose = FALSE)
     saveRDS(obj, file.path(outdir, paste0(sample_name, ".rds")))
 }
 
