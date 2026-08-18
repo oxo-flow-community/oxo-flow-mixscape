@@ -39,9 +39,9 @@ make_fixture <- function(sample_name, outdir) {
     # cells as KO (live: the plain fixture produced zero KO cells and
     # lda.R's subset(idents = "KO") failed).
     stat1_cells <- which(gRNAcall != "NonTargeting")
-    counts[3:7, stat1_cells] <- counts[3:7, stat1_cells] +
-        matrix(rpois(5 * length(stat1_cells), lambda = 25),
-               nrow = 5, ncol = length(stat1_cells))
+    counts[3:12, stat1_cells] <- counts[3:12, stat1_cells] +
+        matrix(rpois(10 * length(stat1_cells), lambda = 200),
+               nrow = 10, ncol = length(stat1_cells))
     obj <- CreateSeuratObject(counts = counts, project = sample_name)
     obj$gRNAcall <- gRNAcall
     obj$KOcall <- ifelse(gRNAcall == "NonTargeting", "NonTargeting", "STAT1")
