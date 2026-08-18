@@ -30,7 +30,11 @@ make_fixture <- function(sample_name, outdir) {
     obj <- CreateSeuratObject(counts = counts, project = sample_name)
     # metadata columns the Mixscape workflow reads (gRNAcall / KOcall)
     guides <- c(sprintf("STAT1-%d", 1:3), "NonTargeting")
-    obj$gRNAcall <- sample(guides, n_cells, replace = TRUE)
+    # >=35 NonTargeting cells: CalcPerturbSig's nn2 needs more NT cells
+    # than n_neighbors=30 (live: 'Cannot find more nearest neighbours
+    # than there are points' when the random draw left ~15 NT cells).
+    obj$gRNAcall <- c(rep("NonTargeting", 35),
+                      sample(guides[1:3], n_cells - 35, replace = TRUE))
     obj$KOcall <- ifelse(obj$gRNAcall == "NonTargeting", "NonTargeting", "STAT1")
     # Upstream (nf-core scrnaseq) feeds Mixscape SCTransform-normalized
     # objects (DefaultAssay = "SCT"); the fixture mirrors that contract.
