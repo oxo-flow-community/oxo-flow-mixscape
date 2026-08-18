@@ -82,6 +82,7 @@ sub <- subset(data, idents = present)
 # https://satijalab.org/seurat/reference/mixscapelda
 empty_lda_outputs <- function() {
     saveRDS(list(), file = lda_object_path)
+    write.csv(data.frame(), file = file.path(sample_dir, "FILTERED_metadata.csv"), row.names = FALSE)
     write.csv(data.frame(), file = lda_data_path, row.names = FALSE)
     write.csv(data.frame(), file = filtered_prtb_data_path, row.names = FALSE)
     write.csv(data.frame(), file = filtered_assay_data_path, row.names = FALSE)
