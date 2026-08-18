@@ -48,7 +48,7 @@ prtb_type = "KO"
 # ---- LDA ----
 lda_npcs = "10"                        # MixscapeLDA npcs
 # ---- VISUALIZATION ----
-antibody_capture = "AB"                # 10X Antibody_Capture assay name; "" disables
+antibody_capture = ""                  # 10X Antibody_Capture assay name; "" disables (default off — the bundled fixtures have no CITE-seq assay; live: "AB" is not an assay)
 
 [[sample_groups]]
 name = "cohort"
