@@ -52,9 +52,27 @@ filtered_assay_data_path <- file.path(sample_dir, paste0("FILTERED_", assay, "_d
 data <- readRDS(file = file.path(mixscape_object_path))
 DefaultAssay(object = data) <- assay
 
-# Remove non-perturbed cells
+# Remove non-perturbed cells. On samples where the classifier found no
+# perturbed class (live: the synthetic fixtures — RunMixscape assigns no
+# KO cells), emit the empty-result outputs instead of hard-failing:
+# upstream's channel would also carry an empty object through.
 Idents(data) <- "mixscape_class.global"
-sub <- subset(data, idents = c(runMixscape_params[["prtb_type"]], calcPerturbSig_params[["nt_term"]]))
+wanted <- c(runMixscape_params[["prtb_type"]], calcPerturbSig_params[["nt_term"]])
+present <- wanted[wanted %in% levels(Idents(data))]
+if (length(setdiff(wanted, present)) > 0 && length(present) == 1) {
+    warning("no perturbed cells (", runMixscape_params[["prtb_type"]],
+            ") in the object — writing empty LDA outputs")
+    saveRDS(list(), file = lda_object_path)
+    write.csv(data.frame(), file = lda_data_path, row.names = FALSE)
+    write.csv(data.frame(), file = filtered_prtb_data_path, row.names = FALSE)
+    write.csv(data.frame(), file = filtered_assay_data_path, row.names = FALSE)
+    png(lda_plot_path, width = 400, height = 400)
+    plot.new()
+    text(0.5, 0.5, "no perturbed cells")
+    dev.off()
+    quit(save = "no", status = 0)
+}
+sub <- subset(data, idents = present)
 
 ### perform Linear Discriminant Analysis (LDA)
 # run LDA to reduce the dimensionality of the data
