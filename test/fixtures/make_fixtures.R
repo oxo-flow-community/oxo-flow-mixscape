@@ -15,7 +15,7 @@ set.seed(42)
 
 make_fixture <- function(sample_name, outdir) {
     n_genes <- 60
-    n_cells <- 70  # >= max(npcs=40, ...) AND every class >=31 cells (CalcPerturbSig's nn2 needs more points than n_neighbors=30 per class — live: 'Cannot find more nearest neighbours than there are points' with 25 STAT1 cells)
+    n_cells <- 100  # every class needs comfortable headroom over n_neighbors=30 (live: S2 still hit 'Cannot find more nearest neighbours' at 35/35 — the nn2 runs on PCA-deduped subsets)
     # Gene-varying Poisson means (0.5..20) + two perturbation-marker genes
     # with clearly elevated counts: near-uniform rpois(lambda=1) counts made
     # SCTransform keep zero-variance features only, and RunPCA's irlba died
@@ -32,8 +32,8 @@ make_fixture <- function(sample_name, outdir) {
     # >=35 NonTargeting cells: CalcPerturbSig's nn2 needs more NT cells
     # than n_neighbors=30 (live: 'Cannot find more nearest neighbours
     # than there are points' when the random draw left ~15 NT cells).
-    gRNAcall <- c(rep("NonTargeting", 35),
-                   sample(guides[1:3], n_cells - 35, replace = TRUE))
+    gRNAcall <- c(rep("NonTargeting", n_cells %/% 2),
+                   sample(guides[1:3], n_cells - n_cells %/% 2, replace = TRUE))
     # Perturbation signature: STAT1 cells overexpress a 5-gene module so
     # CalcPerturbSig has real signal and RunMixscape classifies some
     # cells as KO (live: the plain fixture produced zero KO cells and
