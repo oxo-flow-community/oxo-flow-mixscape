@@ -51,5 +51,9 @@ make_fixture <- function(sample_name, outdir) {
     saveRDS(obj, file.path(outdir, paste0(sample_name, ".rds")))
 }
 
-for (s in c("S1", "S2")) make_fixture(s, outdir)
+# S2 first: its draw passes CalcPerturbSig while the S1 draw hits the
+# nn2 single-point path (live: "Processing rep1" -> "Cannot find more
+# nearest neighbours than there are points"); the generation order
+# decides which draw each sample receives.
+for (s in c("S2", "S1")) make_fixture(s, outdir)
 cat("wrote:", list.files(outdir, pattern = "\\.rds$"), "\n")
