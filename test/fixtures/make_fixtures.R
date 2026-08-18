@@ -15,7 +15,7 @@ set.seed(42)
 
 make_fixture <- function(sample_name, outdir) {
     n_genes <- 60
-    n_cells <- 60  # >= max(npcs=40, ...) — RunPCA/irlba needs nv < min(nrow, ncol) (live: 'max(nu, nv) must be strictly less than min(nrow(A), ncol(A))' at 30 cells)
+    n_cells <- 70  # >= max(npcs=40, ...) AND every class >=31 cells (CalcPerturbSig's nn2 needs more points than n_neighbors=30 per class — live: 'Cannot find more nearest neighbours than there are points' with 25 STAT1 cells)
     # Gene-varying Poisson means (0.5..20) + two perturbation-marker genes
     # with clearly elevated counts: near-uniform rpois(lambda=1) counts made
     # SCTransform keep zero-variance features only, and RunPCA's irlba died

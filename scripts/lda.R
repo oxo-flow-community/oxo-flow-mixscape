@@ -59,7 +59,10 @@ DefaultAssay(object = data) <- assay
 Idents(data) <- "mixscape_class.global"
 wanted <- c(runMixscape_params[["prtb_type"]], calcPerturbSig_params[["nt_term"]])
 present <- wanted[wanted %in% levels(Idents(data))]
-if (length(setdiff(wanted, present)) > 0 && length(present) == 1) {
+# the level can exist with ZERO cells (live: the "KO" level was present
+# but empty, the subset passed and MixscapeLDA's DE died on 0 rows)
+ko_cells <- sum(Idents(data) == runMixscape_params[["prtb_type"]])
+if (ko_cells == 0) {
     warning("no perturbed cells (", runMixscape_params[["prtb_type"]],
             ") in the object — writing empty LDA outputs")
     saveRDS(list(), file = lda_object_path)
