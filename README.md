@@ -51,7 +51,7 @@ git clone https://github.com/oxo-flow-community/oxo-flow-mixscape.git
   workflow expects already normalized/integrated objects — QC, normalization
   and integration run upstream of this workflow (see the Fidelity section).
   The assay analysed is the `assay` config value: the default `"SCT"`
-  matches the nf-core convention (upstream Mixscape consumes
+  matches the upstream default (upstream Mixscape consumes
   SCTransform-normalized objects — `make_fixtures.R` generates the
   bundled fixtures that way); set `assay = "RNA"` when your objects only
   carry a plain RNA assay.
@@ -64,8 +64,9 @@ git clone https://github.com/oxo-flow-community/oxo-flow-mixscape.git
 
 **Compute:**
 
-- The `mixscape`, `lda` and `visualize` rules each need up to 8 CPUs and
-  32000 MB (32 GB) of memory; the export rules need 1 CPU and 1 GB. Use
+- The `mixscape` rule needs up to 8 CPUs (upstream `8 * threads`) and
+  32000 MB (32 GB) of memory; `lda` and `visualize` need 1 CPU and 32 GB
+  each (upstream `threads`); the export rules need 1 CPU and 1 GB. Use
   `oxo-flow run -j N` to control parallelism.
 
 **Tool delivery:**
@@ -133,8 +134,10 @@ Other deviations: (1) sample input paths come from the `{config.data_dir}`
 convention instead of per-row CSV paths — the annotation CSV is retained as
 the reproducibility artifact (copied by `annot_export`); (2) the upstream
 nested config keys (`CalcPerturbSig.*`, `RunMixscape.*`, `MixscapeLDA.npcs`,
-`Antibody_Capture`) are flattened in `[config]` — values and defaults are
-identical; (3) `test/fixtures/*.rds` are tiny genuine Seurat objects generated
+`Antibody_Capture`) are flattened in `[config]` — values identical; defaults
+identical except `antibody_capture` (port default `""` = disabled, because the
+bundled fixtures carry no CITE-seq assay; upstream default `"AB"` — set
+`antibody_capture = "AB"` for the upstream behavior); (3) `test/fixtures/*.rds` are tiny genuine Seurat objects generated
 with Seurat 5.4.0 (local toolchain) for dry-run validation only — upstream
 pins r-seurat 4.4.0; (4) the `snakemake@` object access in the R scripts is
 replaced with positional CLI args (the ported scripts document the arg
