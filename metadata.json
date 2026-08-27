@@ -31,7 +31,7 @@
       "One processed Seurat object per sample, as {data_dir}/{sample}.rds (already normalized/integrated — QC/normalization run upstream)",
       "Annotation CSV (name, data columns) mapping sample names to object paths",
       "Optional: 10X Antibody_Capture assay 'AB' for antibody-expression violin plots",
-      "Compute: up to 8 CPUs / 32000 MB (32 GB) per rule (mixscape, lda, visualize); export rules 1 CPU / 1 GB; -j controls parallelism"
+      "Compute: mixscape up to 8 CPUs / 32000 MB (32 GB); lda, visualize 1 CPU / 32 GB each; export rules 1 CPU / 1 GB; -j controls parallelism"
     ]
   },
   "repo_url": "https://github.com/oxo-flow-community/oxo-flow-mixscape",
