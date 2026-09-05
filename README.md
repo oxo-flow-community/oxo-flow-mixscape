@@ -73,7 +73,7 @@ git clone https://github.com/oxo-flow-community/oxo-flow-mixscape.git
 
 - Tools run in conda environments with pinned versions declared in
   `main.oxoflow` — `envs/seurat_mixscape.yaml` and `envs/seurat_lda.yaml`
-  (r-seurat 4.4.0, r-seuratobject 4.1.4, r-matrix, r-irlba, r-mixtools,
+  (r-seurat 4.4.0, r-seuratobject 4.1.4, r-matrix 1.6_5, r-irlba, r-mixtools,
   r-ggplot2, r-scales, r-patchwork, r-data.table) and `envs/config_export.yaml`
   (pyyaml 6.0.1). Conda (or mamba) must be available at runtime; the
   `env_export_*` rules additionally require a `conda` binary on PATH.
