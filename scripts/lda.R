@@ -92,17 +92,22 @@ empty_lda_outputs <- function() {
     dev.off()
 }
 
-# The DE gene-set discovery inside RunLDA can legitimately find no
-# genes on synthetic data (live: 'replacement has N rows, data has 0'
-# from a 0-row DE table) — treat it as the zero-result outcome.
-sub <- tryCatch(
-    MixscapeLDA(
+# Workaround for Seurat 4.4.0: MixscapeLDA accepts logfc.threshold but its
+# body never forwards it to PrepLDA, which therefore always runs at its own
+# default 0.25. When DE at 0.25 yields fewer than npcs+1 significant genes
+# per perturbation, PrepLDA silently returns an empty projection list and
+# RunLDA then dies with "replacement has N rows, data has 0" — which the
+# catch below would swallow into silent empty outputs. Calling the exported
+# PrepLDA/RunLDA directly (both are exported in Seurat 4.x) and forwarding
+# the configured lfc_th restores the intended behaviour. The remaining
+# MixscapeLDA arguments are no-ops in 4.4.0 as well (RunLDA's own defaults
+# are seed=42 and reduction.key="LDA_", identical to what we pass).
+# Live-pinned on the seurat_lda env (R 4.4.1 / Seurat 4.4.0): lfc 0.25 ->
+# 10 sig DE genes (< npcs+1=11, empty), lfc 0.1 -> 14 (works).
+projected_pcs <- tryCatch(
+    PrepLDA(
         object = sub,
-        assay = assay,
-        ndims.print = 1:5,
-        nfeatures.print = 30,
-        reduction.key = "LDA_",
-        seed = 42,
+        de.assay = assay,
         pc.assay = "PRTB",
         labels = calcPerturbSig_params[["gene_col"]],
         nt.label = calcPerturbSig_params[["nt_term"]],
@@ -111,7 +116,41 @@ sub <- tryCatch(
         logfc.threshold = runMixscape_params[["lfc_th"]]
     ),
     error = function(e) {
-        warning("MixscapeLDA failed (", conditionMessage(e),
+        warning("PrepLDA failed (", conditionMessage(e),
+                ") — writing empty LDA outputs")
+        empty_lda_outputs()
+        quit(save = "no", status = 0)
+    }
+)
+
+if (length(projected_pcs) == 0) {
+    # Legitimate zero-result: no perturbation reached npcs+1 significant DE
+    # genes at the configured threshold (live: synthetic single-gene
+    # fixtures at the default 0.25). Emit the empty outputs instead of
+    # hard-failing.
+    warning("no perturbation yielded >= ", mixscapeLDA_params[["npcs"]] + 1,
+            " significant DE genes at logfc.threshold=",
+            runMixscape_params[["lfc_th"]], " — writing empty LDA outputs")
+    empty_lda_outputs()
+    quit(save = "no", status = 0)
+}
+
+# Mirror MixscapeLDA's body (same labels extraction and RunLDA call), with
+# the lda reduction attached under the same "lda" name downstream code and
+# docs expect.
+lda_labels <- sub[[calcPerturbSig_params[["gene_col"]]]][, ]
+sub <- tryCatch({
+    lda_reduction <- RunLDA(
+        object = projected_pcs,
+        labels = lda_labels,
+        assay = assay,
+        verbose = TRUE
+    )
+    sub[["lda"]] <- lda_reduction
+    sub
+    },
+    error = function(e) {
+        warning("RunLDA failed (", conditionMessage(e),
                 ") — writing empty LDA outputs")
         empty_lda_outputs()
         quit(save = "no", status = 0)
@@ -121,34 +160,28 @@ sub <- tryCatch(
 lda_data <- Embeddings(object = sub, reduction = "lda")
 
 ### Visualize results
+lda_dims <- ncol(lda_data)
 
 # Use LDA results to run UMAP and visualize cells in 2-D
 # https://satijalab.org/seurat/reference/runumap
-sub <- RunUMAP(
-  object = sub,
-  dims = 1:ncol(lda_data),#(length(unique(sub$mixscape_class))-1),
-  reduction = 'lda',
-  reduction.key = 'ldaumap',
-  reduction.name = 'ldaumap')
+# LDA produces (n_classes - 1) dimensions; UMAP needs at least 2 input
+# dimensions, so it only applies from 3 classes (2+ perturbations) upward.
+# Live-pinned: a single-perturbation sample (STAT1 + NT) yields 1 LDA dim
+# and RunUMAP errors with "1 dims provided, 2 UMAP components requested".
+if (lda_dims >= 3) {
+  sub <- RunUMAP(
+    object = sub,
+    dims = 1:lda_dims,
+    reduction = 'lda',
+    reduction.key = 'ldaumap',
+    reduction.name = 'ldaumap')
+}
 
 # plot UMAP
 width <- 10
 height <- 10
 
-
-# if only 3 classes remain, then LDA projection is already 2D, no UMAP necessary
-# if ((length(unique(sub$mixscape_class))-1)==2){
-if (ncol(lda_data)==2){
-    reduction <- 'lda'
-    x_label <- "LDA 1"
-    y_label <- "LDA 2"
-}else{
-    reduction <- 'ldaumap'
-    x_label <- "UMAP 1"
-    y_label <- "UMAP 2"
-}
-
-# Visualize UMAP clustering results.
+# Visualize clustering results.
 Idents(sub) <- "mixscape_class"
 sub$mixscape_class <- as.factor(sub$mixscape_class)
 
@@ -156,20 +189,50 @@ sub$mixscape_class <- as.factor(sub$mixscape_class)
 col = setNames(object = hue_pal()(length(unique(sub$mixscape_class))),nm = unique(sub$mixscape_class))
 col[[calcPerturbSig_params[["nt_term"]]]] <- "#D3D3D3"
 
-p <- DimPlot(object = sub,
-             reduction = reduction,
-             repel = T,
-             label.size = 4,
-             label = T,
-             cols = col,
-             pt.size=0.1,
-             label.box=T)
+# if only 3 classes remain, then LDA projection is already 2D, no UMAP necessary
+# if ((length(unique(sub$mixscape_class))-1)==2){
+if (lda_dims == 1) {
+  # Single perturbation: one discriminant axis only — show the class-wise
+  # distribution of the LDA 1 scores instead of a fabricated 2-D embedding.
+  p2 <- ggplot(
+      data = data.frame(
+        lda1 = as.numeric(lda_data[, 1]),
+        mixscape_class = sub$mixscape_class
+      ),
+      mapping = aes(x = mixscape_class, y = lda1, fill = mixscape_class)) +
+    geom_violin(alpha = 0.6, trim = TRUE) +
+    geom_jitter(width = 0.15, size = 0.8, aes(color = mixscape_class)) +
+    scale_fill_manual(values = col, drop = FALSE) +
+    scale_color_manual(values = col, drop = FALSE) +
+    ylab("LDA 1") +
+    xlab(NULL) +
+    custom_theme + NoLegend()
+} else {
+  if (lda_dims == 2){
+      reduction <- 'lda'
+      x_label <- "LDA 1"
+      y_label <- "LDA 2"
+  }else{
+      reduction <- 'ldaumap'
+      x_label <- "UMAP 1"
+      y_label <- "UMAP 2"
+  }
 
-p2 <- p+
-  scale_color_manual(values=col, drop=FALSE) +
-  ylab(y_label) +
-  xlab(x_label) +
-  custom_theme + NoLegend()
+  p <- DimPlot(object = sub,
+               reduction = reduction,
+               repel = T,
+               label.size = 4,
+               label = T,
+               cols = col,
+               pt.size=0.1,
+               label.box=T)
+
+  p2 <- p+
+    scale_color_manual(values=col, drop=FALSE) +
+    ylab(y_label) +
+    xlab(x_label) +
+    custom_theme + NoLegend()
+}
 
 ggsave_new(filename = "LDA_UMAP",
            results_path=dirname(lda_plot_path),
